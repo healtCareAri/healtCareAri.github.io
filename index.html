@@ -100,6 +100,10 @@
             </div>
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div class="chart-container">
+                    <h2 class="text-xl font-semibold mb-2">Monthly Health Metrics</h2>
+                    <canvas id="monthlyMetricsChart"></canvas>
+                </div>
+                <div class="chart-container">
                     <h2 class="text-xl font-semibold mb-2">Cholesterol Levels</h2>
                     <canvas id="cholesterolChart"></canvas>
                 </div>
@@ -132,7 +136,7 @@
                     <canvas id="cholesterolTrendChart"></canvas>
                 </div>
                 <div class="chart-container">
-                    <h2 class="text-xl font-semibold mb-2">Health Profile (July 2025)</h2>
+                    <h2 class="text-xl font-semibold mb-2">Health Profile</h2>
                     <canvas id="healthProfileChart"></canvas>
                 </div>
             </div>
@@ -443,8 +447,33 @@
                 }
             };
 
+            // Monthly metrics for the selected month
+            const monthlyMetrics = filteredData.reduce((acc, d) => {
+                if (!acc[d.month]) acc[d.month] = {};
+                if (!acc[d.month][d.name]) acc[d.month][d.name] = {
+                    cholesterol: 0,
+                    bloodSugar: 0,
+                    uricAcid: 0,
+                    systolic: 0,
+                    diastolic: 0,
+                    bmi: 0,
+                    weight: 0
+                };
+                acc[d.month][d.name].cholesterol = d.cholesterol;
+                acc[d.month][d.name].bloodSugar = d.bloodSugar;
+                acc[d.month][d.name].uricAcid = d.uricAcid;
+                const [systolic, diastolic] = d.bloodPressure.split('/').map(Number);
+                acc[d.month][d.name].systolic = systolic;
+                acc[d.month][d.name].diastolic = diastolic;
+                acc[d.month][d.name].bmi = calculateBMI(d.weight, d.height);
+                acc[d.month][d.name].weight = d.weight;
+                return acc;
+            }, {});
+
             return {
                 months,
+                molinaData,
+                mulzahrianData,
                 cholesterol: {
                     molina: months.map(m => {
                         const record = molinaData.find(d => d.month === m);
@@ -530,7 +559,8 @@
                     })
                 },
                 averages,
-                originalValues
+                originalValues,
+                monthlyMetrics
             };
         }
 
@@ -538,10 +568,12 @@
         function initCharts(month = '', year = '') {
             const chartData = processChartData(month, year);
             const months = chartData.months;
+            const molinaData = chartData.molinaData;
+            const mulzahrianData = chartData.mulzahrianData;
 
             // Destroy existing charts to prevent overlap
             const canvases = [
-                'cholesterolChart', 'bloodSugarChart', 'uricAcidChart', 'bloodPressureChart', 
+                'monthlyMetricsChart', 'cholesterolChart', 'bloodSugarChart', 'uricAcidChart', 'bloodPressureChart', 
                 'bmiChart', 'weightChart', 'heightChart', 'cholesterolTrendChart', 'healthProfileChart',
                 'avgCholesterolChart', 'avgBloodSugarChart', 'avgUricAcidChart', 
                 'avgSystolicChart', 'avgDiastolicChart', 'avgWeightChart', 'avgHeightChart', 'avgBmiChart'
@@ -551,6 +583,57 @@
                 if (chart) chart.destroy();
             });
 
+            // Monthly Health Metrics Bar Chart
+            const selectedMonth = month || months[0];
+            const monthlyData = chartData.monthlyMetrics[selectedMonth] || {};
+            new Chart(document.getElementById('monthlyMetricsChart'), {
+                type: 'bar',
+                data: {
+                    labels: ['Cholesterol', 'Blood Sugar', 'Uric Acid', 'Systolic BP', 'Diastolic BP', 'BMI', 'Weight'],
+                    datasets: [
+                        {
+                            label: 'Molina Azlova',
+                            data: [
+                                monthlyData['Molina Azlova'] ? monthlyData['Molina Azlova'].cholesterol : 0,
+                                monthlyData['Molina Azlova'] ? monthlyData['Molina Azlova'].bloodSugar : 0,
+                                monthlyData['Molina Azlova'] ? monthlyData['Molina Azlova'].uricAcid : 0,
+                                monthlyData['Molina Azlova'] ? monthlyData['Molina Azlova'].systolic : 0,
+                                monthlyData['Molina Azlova'] ? monthlyData['Molina Azlova'].diastolic : 0,
+                                monthlyData['Molina Azlova'] ? monthlyData['Molina Azlova'].bmi : 0,
+                                monthlyData['Molina Azlova'] ? monthlyData['Molina Azlova'].weight : 0
+                            ],
+                            backgroundColor: '#3B82F6'
+                        },
+                        {
+                            label: 'Mulzahrian',
+                            data: [
+                                monthlyData['Mulzahrian'] ? monthlyData['Mulzahrian'].cholesterol : 0,
+                                monthlyData['Mulzahrian'] ? monthlyData['Mulzahrian'].bloodSugar : 0,
+                                monthlyData['Mulzahrian'] ? monthlyData['Mulzahrian'].uricAcid : 0,
+                                monthlyData['Mulzahrian'] ? monthlyData['Mulzahrian'].systolic : 0,
+                                monthlyData['Mulzahrian'] ? monthlyData['Mulzahrian'].diastolic : 0,
+                                monthlyData['Mulzahrian'] ? monthlyData['Mulzahrian'].bmi : 0,
+                                monthlyData['Mulzahrian'] ? monthlyData['Mulzahrian'].weight : 0
+                            ],
+                            backgroundColor: '#10B981'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: { stacked: false },
+                        y: {
+                            beginAtZero: true,
+                            title: { display: true, text: 'Value' }
+                        }
+                    },
+                    plugins: {
+                        legend: { position: 'top' }
+                    }
+                }
+            });
+
             // Cholesterol Stacked Bar Chart
             new Chart(document.getElementById('cholesterolChart'), {
                 type: 'bar',
@@ -558,39 +641,13 @@
                     labels: months,
                     datasets: [
                         {
-                            label: 'Molina Azlova Normal',
-                            data: chartData.cholesterol.molina.map(d => d.normal),
+                            data: chartData.cholesterol.molina.map(d => d.normal + d.caution + d.unhealthy),
                             backgroundColor: '#10B981',
                             stack: 'Molina'
                         },
                         {
-                            label: 'Molina Azlova Caution',
-                            data: chartData.cholesterol.molina.map(d => d.caution),
-                            backgroundColor: '#F59E0B',
-                            stack: 'Molina'
-                        },
-                        {
-                            label: 'Molina Azlova Unhealthy',
-                            data: chartData.cholesterol.molina.map(d => d.unhealthy),
-                            backgroundColor: '#EF4444',
-                            stack: 'Molina'
-                        },
-                        {
-                            label: 'Mulzahrian Normal',
-                            data: chartData.cholesterol.mulzahrian.map(d => d.normal),
+                            data: chartData.cholesterol.mulzahrian.map(d => d.normal + d.caution + d.unhealthy),
                             backgroundColor: '#10B981',
-                            stack: 'Mulzahrian'
-                        },
-                        {
-                            label: 'Mulzahrian Caution',
-                            data: chartData.cholesterol.mulzahrian.map(d => d.caution),
-                            backgroundColor: '#F59E0B',
-                            stack: 'Mulzahrian'
-                        },
-                        {
-                            label: 'Mulzahrian Unhealthy',
-                            data: chartData.cholesterol.mulzahrian.map(d => d.unhealthy),
-                            backgroundColor: '#EF4444',
                             stack: 'Mulzahrian'
                         }
                     ]
@@ -608,7 +665,7 @@
                                     type: 'label',
                                     xValue: months.map((m, i) => i + 0.5),
                                     yValue: -20,
-                                    content: months.map((m, i) => `Chol: ${chartData.originalValues.cholesterol.molina[i].toFixed(2)}`),
+                                    content: months.map((m, i) => `${chartData.originalValues.cholesterol.molina[i].toFixed(2)}`),
                                     font: { size: 10 },
                                     color: '#6B7280',
                                     position: 'start'
@@ -617,13 +674,14 @@
                                     type: 'label',
                                     xValue: months.map((m, i) => i + 1.5),
                                     yValue: -20,
-                                    content: months.map((m, i) => `Chol: ${chartData.originalValues.cholesterol.mulzahrian[i].toFixed(2)}`),
+                                    content: months.map((m, i) => `${chartData.originalValues.cholesterol.mulzahrian[i].toFixed(2)}`),
                                     font: { size: 10 },
                                     color: '#6B7280',
                                     position: 'start'
                                 }
                             }
-                        }
+                        },
+                        legend: { display: false }
                     }
                 }
             });
@@ -977,7 +1035,7 @@
                     datasets: [
                         {
                             label: 'Molina Azlova Cholesterol',
-                            data: [220, 236],
+                            data: molinaData.map(d => d.cholesterol),
                             borderColor: '#3B82F6',
                             backgroundColor: 'rgba(59, 130, 246, 0.2)',
                             fill: true,
@@ -985,7 +1043,7 @@
                         },
                         {
                             label: 'Mulzahrian Cholesterol',
-                            data: [232, 171],
+                            data: mulzahrianData.map(d => d.cholesterol),
                             borderColor: '#10B981',
                             backgroundColor: 'rgba(16, 185, 129, 0.2)',
                             fill: true,
@@ -1007,10 +1065,10 @@
                 }
             });
 
-            // Health Profile Radar Chart (July 2025)
-            const julyData = healthData.filter(d => d.month === 'July' && d.year === 2025);
-            const molinaJuly = julyData.find(d => d.name === 'Molina Azlova');
-            const mulzahrianJuly = julyData.find(d => d.name === 'Mulzahrian');
+            // Health Profile Radar Chart
+            const filteredDataForProfile = month ? chartData.molinaData.filter(d => d.month === month && (!year || d.year === parseInt(year))).concat(chartData.mulzahrianData.filter(d => d.month === month && (!year || d.year === parseInt(year)))) : chartData.molinaData.concat(chartData.mulzahrianData);
+            const molinaProfile = filteredDataForProfile.find(d => d.name === 'Molina Azlova');
+            const mulzahrianProfile = filteredDataForProfile.find(d => d.name === 'Mulzahrian');
             new Chart(document.getElementById('healthProfileChart'), {
                 type: 'radar',
                 data: {
@@ -1019,13 +1077,13 @@
                         {
                             label: 'Molina Azlova',
                             data: [
-                                molinaJuly ? molinaJuly.cholesterol : 0,
-                                molinaJuly ? molinaJuly.bloodSugar : 0,
-                                molinaJuly ? molinaJuly.uricAcid : 0,
-                                molinaJuly ? parseInt(molinaJuly.bloodPressure.split('/')[0]) : 0,
-                                molinaJuly ? parseInt(molinaJuly.bloodPressure.split('/')[1]) : 0,
-                                molinaJuly ? calculateBMI(molinaJuly.weight, molinaJuly.height) : 0,
-                                molinaJuly ? molinaJuly.weight : 0
+                                molinaProfile ? molinaProfile.cholesterol : 0,
+                                molinaProfile ? molinaProfile.bloodSugar : 0,
+                                molinaProfile ? molinaProfile.uricAcid : 0,
+                                molinaProfile ? parseInt(molinaProfile.bloodPressure.split('/')[0]) : 0,
+                                molinaProfile ? parseInt(molinaProfile.bloodPressure.split('/')[1]) : 0,
+                                molinaProfile ? calculateBMI(molinaProfile.weight, molinaProfile.height) : 0,
+                                molinaProfile ? molinaProfile.weight : 0
                             ],
                             backgroundColor: 'rgba(59, 130, 246, 0.2)',
                             borderColor: '#3B82F6',
@@ -1034,13 +1092,13 @@
                         {
                             label: 'Mulzahrian',
                             data: [
-                                mulzahrianJuly ? mulzahrianJuly.cholesterol : 0,
-                                mulzahrianJuly ? mulzahrianJuly.bloodSugar : 0,
-                                mulzahrianJuly ? mulzahrianJuly.uricAcid : 0,
-                                mulzahrianJuly ? parseInt(mulzahrianJuly.bloodPressure.split('/')[0]) : 0,
-                                mulzahrianJuly ? parseInt(mulzahrianJuly.bloodPressure.split('/')[1]) : 0,
-                                mulzahrianJuly ? calculateBMI(mulzahrianJuly.weight, mulzahrianJuly.height) : 0,
-                                mulzahrianJuly ? mulzahrianJuly.weight : 0
+                                mulzahrianProfile ? mulzahrianProfile.cholesterol : 0,
+                                mulzahrianProfile ? mulzahrianProfile.bloodSugar : 0,
+                                mulzahrianProfile ? mulzahrianProfile.uricAcid : 0,
+                                mulzahrianProfile ? parseInt(mulzahrianProfile.bloodPressure.split('/')[0]) : 0,
+                                mulzahrianProfile ? parseInt(mulzahrianProfile.bloodPressure.split('/')[1]) : 0,
+                                mulzahrianProfile ? calculateBMI(mulzahrianProfile.weight, mulzahrianProfile.height) : 0,
+                                mulzahrianProfile ? mulzahrianProfile.weight : 0
                             ],
                             backgroundColor: 'rgba(16, 185, 129, 0.2)',
                             borderColor: '#10B981',
