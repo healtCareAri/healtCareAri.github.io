@@ -1,0 +1,1247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@2.2.1/dist/chartjs-plugin-annotation.min.js"></script>
+    <style>
+        body {
+            background-color: #f3f4f6;
+            font-family: 'Arial', sans-serif;
+        }
+        .sidebar {
+            transition: transform 0.3s ease-in-out;
+        }
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            .sidebar.open {
+                transform: translateX(0);
+            }
+        }
+        .chart-container {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+        .original-value {
+            position: absolute;
+            bottom: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 10px;
+            color: #6B7280;
+        }
+    </style>
+</head>
+<body class="min-h-screen">
+    <!-- Sidebar -->
+    <div class="sidebar fixed top-0 left-0 h-full w-64 bg-blue-800 text-white p-4 md:transform-none z-50">
+        <div class="flex items-center justify-between">
+            <h2 class="text-2xl font-bold">Health Dashboard</h2>
+            <button id="closeSidebar" class="md:hidden text-white focus:outline-none">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+        <nav class="mt-6">
+            <ul>
+                <li><a href="#dashboard" class="block py-2 px-4 hover:bg-blue-700 rounded">Dashboard</a></li>
+                <li><a href="#averages" class="block py-2 px-4 hover:bg-blue-700 rounded">Averages</a></li>
+            </ul>
+        </nav>
+    </div>
+
+    <!-- Main Content -->
+    <div class="md:ml-64 p-4">
+        <!-- Mobile Menu Button -->
+        <button id="openSidebar" class="md:hidden fixed top-4 left-4 z-50 text-blue-800 focus:outline-none">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7"></path>
+            </svg>
+        </button>
+
+        <!-- Dashboard Section -->
+        <section id="dashboard" class="mb-8">
+            <h1 class="text-3xl font-bold mb-4">Health Overview 2025</h1>
+            <div class="mb-4 flex flex-col md:flex-row gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Month</label>
+                    <select id="monthFilter" class="mt-1 block w-full md:w-1/3 p-2 border rounded">
+                        <option value="">All Months</option>
+                        <option value="January">January</option>
+                        <option value="February">February</option>
+                        <option value="March">March</option>
+                        <option value="April">April</option>
+                        <option value="May">May</option>
+                        <option value="June">June</option>
+                        <option value="July">July</option>
+                        <option value="August">August</option>
+                        <option value="September">September</option>
+                        <option value="October">October</option>
+                        <option value="November">November</option>
+                        <option value="December">December</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700">Year</label>
+                    <select id="yearFilter" class="mt-1 block w-full md:w-1/3 p-2 border rounded">
+                        <option value="">All Years</option>
+                        <option value="2025">2025</option>
+                    </select>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="chart-container">
+                    <h2 class="text-xl font-semibold mb-2">Cholesterol Levels</h2>
+                    <canvas id="cholesterolChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h2 class="text-xl font-semibold mb-2">Blood Sugar Levels</h2>
+                    <canvas id="bloodSugarChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h2 class="text-xl font-semibold mb-2">Uric Acid Levels</h2>
+                    <canvas id="uricAcidChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h2 class="text-xl font-semibold mb-2">Blood Pressure</h2>
+                    <canvas id="bloodPressureChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h2 class="text-xl font-semibold mb-2">Body Mass Index (BMI)</h2>
+                    <canvas id="bmiChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h2 class="text-xl font-semibold mb-2">Weight</h2>
+                    <canvas id="weightChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h2 class="text-xl font-semibold mb-2">Height</h2>
+                    <canvas id="heightChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h2 class="text-xl font-semibold mb-2">Cholesterol Trend</h2>
+                    <canvas id="cholesterolTrendChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h2 class="text-xl font-semibold mb-2">Health Profile (July 2025)</h2>
+                    <canvas id="healthProfileChart"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Averages Section -->
+        <section id="averages" class="mb-8">
+            <h1 class="text-3xl font-bold mb-4">Average Health Metrics</h1>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="chart-container">
+                    <h2 class="text-xl font-semibold mb-2">Average Cholesterol</h2>
+                    <canvas id="avgCholesterolChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h2 class="text-xl font-semibold mb-2">Average Blood Sugar</h2>
+                    <canvas id="avgBloodSugarChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h2 class="text-xl font-semibold mb-2">Average Uric Acid</h2>
+                    <canvas id="avgUricAcidChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h2 class="text-xl font-semibold mb-2">Average Systolic BP</h2>
+                    <canvas id="avgSystolicChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h2 class="text-xl font-semibold mb-2">Average Diastolic BP</h2>
+                    <canvas id="avgDiastolicChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h2 class="text-xl font-semibold mb-2">Average Weight</h2>
+                    <canvas id="avgWeightChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h2 class="text-xl font-semibold mb-2">Average Height</h2>
+                    <canvas id="avgHeightChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h2 class="text-xl font-semibold mb-2">Average BMI</h2>
+                    <canvas id="avgBmiChart"></canvas>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        // Normal ranges for health metrics
+        const NORMAL_RANGES = {
+            cholesterol: {
+                normalMax: 200, // Green: < 200
+                cautionMax: 239 // Yellow: 200-239, Red: >= 240
+            },
+            bloodSugar: {
+                normalMin: 70, // Green: 70-100
+                normalMax: 100,
+                cautionMax: 125 // Yellow: < 70 or 100-125, Red: >= 126
+            },
+            uricAcid: {
+                molina: { normalMax: 6.0, cautionMax: 7.0 }, // Women: Green: 2.4-6.0, Yellow: 6.1-7.0, Red: > 7.0
+                mulzahrian: { normalMax: 7.0, cautionMax: 8.0 } // Men: Green: 3.4-7.0, Yellow: 7.1-8.0, Red: > 8.0
+            },
+            bloodPressure: {
+                systolic: { normalMax: 120, cautionMax: 139 }, // Green: < 120, Yellow: 120-139, Red: >= 140
+                diastolic: { normalMax: 80, cautionMax: 89 } // Green: < 80, Yellow: 80-89, Red: >= 90
+            },
+            bmi: {
+                normalMin: 18.5, // Green: 18.5-24.9
+                normalMax: 24.9,
+                cautionMin: 17, // Yellow: 17-18.4 or 25-29.9
+                cautionMax: 29.9 // Red: < 17 or >= 30
+            },
+            weight: {
+                normalMin: 45, // Green: 45-70
+                normalMax: 70,
+                cautionMin: 40, // Yellow: 40-44.9 or 70.1-80
+                cautionMax: 80 // Red: < 40 or > 80
+            }
+        };
+
+        // Initial health data in JSON format (add manually each month)
+        const healthData = [
+            {
+                name: "Molina Azlova",
+                month: "July",
+                year: 2025,
+                cholesterol: 236,
+                bloodSugar: 79,
+                uricAcid: 4.7,
+                bloodPressure: "108/66",
+                weight: 51,
+                height: 160
+            },
+            {
+                name: "Mulzahrian",
+                month: "July",
+                year: 2025,
+                cholesterol: 171,
+                bloodSugar: 82,
+                uricAcid: 5.0,
+                bloodPressure: "132/74",
+                weight: 56,
+                height: 166
+            },
+            {
+                name: "Molina Azlova",
+                month: "June",
+                year: 2025,
+                cholesterol: 220,
+                bloodSugar: 83,
+                uricAcid: 5.4,
+                bloodPressure: "93/66",
+                weight: 51,
+                height: 160
+            },
+            {
+                name: "Mulzahrian",
+                month: "June",
+                year: 2025,
+                cholesterol: 232,
+                bloodSugar: 96,
+                uricAcid: 7.2,
+                bloodPressure: "110/70",
+                weight: 56,
+                height: 166
+            }
+        ];
+
+        // Calculate BMI
+        function calculateBMI(weight, height) {
+            const heightInMeters = height / 100;
+            return weight / (heightInMeters * heightInMeters);
+        }
+
+        // Calculate stacked segments for a value based on ranges
+        function getStackedSegments(metric, value, name) {
+            let normal = 0, caution = 0, unhealthy = value;
+            if (metric === 'cholesterol') {
+                if (value <= NORMAL_RANGES.cholesterol.normalMax) {
+                    normal = value;
+                    unhealthy = 0;
+                } else if (value <= NORMAL_RANGES.cholesterol.cautionMax) {
+                    normal = NORMAL_RANGES.cholesterol.normalMax;
+                    caution = value - normal;
+                    unhealthy = 0;
+                } else {
+                    normal = NORMAL_RANGES.cholesterol.normalMax;
+                    caution = NORMAL_RANGES.cholesterol.cautionMax - normal;
+                    unhealthy = value - NORMAL_RANGES.cholesterol.cautionMax;
+                }
+            } else if (metric === 'bloodSugar') {
+                if (value >= NORMAL_RANGES.bloodSugar.normalMin && value <= NORMAL_RANGES.bloodSugar.normalMax) {
+                    normal = value - NORMAL_RANGES.bloodSugar.normalMin;
+                    unhealthy = 0;
+                } else if (value < NORMAL_RANGES.bloodSugar.normalMin) {
+                    caution = value;
+                    unhealthy = 0;
+                } else if (value <= NORMAL_RANGES.bloodSugar.cautionMax) {
+                    normal = NORMAL_RANGES.bloodSugar.normalMax - NORMAL_RANGES.bloodSugar.normalMin;
+                    caution = value - NORMAL_RANGES.bloodSugar.normalMax;
+                    unhealthy = 0;
+                } else {
+                    normal = NORMAL_RANGES.bloodSugar.normalMax - NORMAL_RANGES.bloodSugar.normalMin;
+                    caution = NORMAL_RANGES.bloodSugar.cautionMax - NORMAL_RANGES.bloodSugar.normalMax;
+                    unhealthy = value - NORMAL_RANGES.bloodSugar.cautionMax;
+                }
+            } else if (metric === 'uricAcid') {
+                const ranges = name === 'Molina Azlova' ? NORMAL_RANGES.uricAcid.molina : NORMAL_RANGES.uricAcid.mulzahrian;
+                if (value <= ranges.normalMax) {
+                    normal = value;
+                    unhealthy = 0;
+                } else if (value <= ranges.cautionMax) {
+                    normal = ranges.normalMax;
+                    caution = value - ranges.normalMax;
+                    unhealthy = 0;
+                } else {
+                    normal = ranges.normalMax;
+                    caution = ranges.cautionMax - ranges.normalMax;
+                    unhealthy = value - ranges.cautionMax;
+                }
+            } else if (metric === 'systolic') {
+                if (value <= NORMAL_RANGES.bloodPressure.systolic.normalMax) {
+                    normal = value;
+                    unhealthy = 0;
+                } else if (value <= NORMAL_RANGES.bloodPressure.systolic.cautionMax) {
+                    normal = NORMAL_RANGES.bloodPressure.systolic.normalMax;
+                    caution = value - normal;
+                    unhealthy = 0;
+                } else {
+                    normal = NORMAL_RANGES.bloodPressure.systolic.normalMax;
+                    caution = NORMAL_RANGES.bloodPressure.systolic.cautionMax - normal;
+                    unhealthy = value - NORMAL_RANGES.bloodPressure.systolic.cautionMax;
+                }
+            } else if (metric === 'diastolic') {
+                if (value <= NORMAL_RANGES.bloodPressure.diastolic.normalMax) {
+                    normal = value;
+                    unhealthy = 0;
+                } else if (value <= NORMAL_RANGES.bloodPressure.diastolic.cautionMax) {
+                    normal = NORMAL_RANGES.bloodPressure.diastolic.normalMax;
+                    caution = value - normal;
+                    unhealthy = 0;
+                } else {
+                    normal = NORMAL_RANGES.bloodPressure.diastolic.normalMax;
+                    caution = NORMAL_RANGES.bloodPressure.diastolic.cautionMax - normal;
+                    unhealthy = value - NORMAL_RANGES.bloodPressure.diastolic.cautionMax;
+                }
+            } else if (metric === 'bmi') {
+                if (value >= NORMAL_RANGES.bmi.normalMin && value <= NORMAL_RANGES.bmi.normalMax) {
+                    normal = value - NORMAL_RANGES.bmi.normalMin;
+                    unhealthy = 0;
+                } else if (value < NORMAL_RANGES.bmi.normalMin) {
+                    caution = value - NORMAL_RANGES.bmi.cautionMin;
+                    unhealthy = NORMAL_RANGES.bmi.cautionMin - value;
+                } else if (value <= NORMAL_RANGES.bmi.cautionMax) {
+                    normal = NORMAL_RANGES.bmi.normalMax - NORMAL_RANGES.bmi.normalMin;
+                    caution = value - NORMAL_RANGES.bmi.normalMax;
+                    unhealthy = 0;
+                } else {
+                    normal = NORMAL_RANGES.bmi.normalMax - NORMAL_RANGES.bmi.normalMin;
+                    caution = NORMAL_RANGES.bmi.cautionMax - NORMAL_RANGES.bmi.normalMax;
+                    unhealthy = value - NORMAL_RANGES.bmi.cautionMax;
+                }
+            } else if (metric === 'weight') {
+                if (value >= NORMAL_RANGES.weight.normalMin && value <= NORMAL_RANGES.weight.normalMax) {
+                    normal = value - NORMAL_RANGES.weight.normalMin;
+                    unhealthy = 0;
+                } else if (value < NORMAL_RANGES.weight.normalMin) {
+                    caution = value - NORMAL_RANGES.weight.cautionMin;
+                    unhealthy = NORMAL_RANGES.weight.cautionMin - value;
+                } else if (value <= NORMAL_RANGES.weight.cautionMax) {
+                    normal = NORMAL_RANGES.weight.normalMax - NORMAL_RANGES.weight.normalMin;
+                    caution = value - NORMAL_RANGES.weight.normalMax;
+                    unhealthy = 0;
+                } else {
+                    normal = NORMAL_RANGES.weight.normalMax - NORMAL_RANGES.weight.normalMin;
+                    caution = NORMAL_RANGES.weight.cautionMax - NORMAL_RANGES.weight.normalMax;
+                    unhealthy = value - NORMAL_RANGES.weight.cautionMax;
+                }
+            }
+            return { normal: Math.max(0, normal), caution: Math.max(0, caution), unhealthy: Math.max(0, unhealthy) };
+        }
+
+        // Process data for charts
+        function processChartData(month, year) {
+            const filteredData = healthData.filter(d => 
+                (!month || d.month === month) && (!year || d.year === parseInt(year))
+            );
+            const months = [...new Set(filteredData.map(d => d.month))];
+            const molinaData = filteredData.filter(d => d.name === "Molina Azlova");
+            const mulzahrianData = filteredData.filter(d => d.name === "Mulzahrian");
+
+            // Calculate averages
+            const averages = {
+                cholesterol: {
+                    molina: molinaData.length ? molinaData.reduce((sum, d) => sum + d.cholesterol, 0) / molinaData.length : 0,
+                    mulzahrian: mulzahrianData.length ? mulzahrianData.reduce((sum, d) => sum + d.cholesterol, 0) / mulzahrianData.length : 0
+                },
+                bloodSugar: {
+                    molina: molinaData.length ? molinaData.reduce((sum, d) => sum + d.bloodSugar, 0) / molinaData.length : 0,
+                    mulzahrian: mulzahrianData.length ? mulzahrianData.reduce((sum, d) => sum + d.bloodSugar, 0) / mulzahrianData.length : 0
+                },
+                uricAcid: {
+                    molina: molinaData.length ? molinaData.reduce((sum, d) => sum + d.uricAcid, 0) / molinaData.length : 0,
+                    mulzahrian: mulzahrianData.length ? mulzahrianData.reduce((sum, d) => sum + d.uricAcid, 0) / mulzahrianData.length : 0
+                },
+                systolic: {
+                    molina: molinaData.length ? molinaData.reduce((sum, d) => sum + parseInt(d.bloodPressure.split('/')[0]), 0) / molinaData.length : 0,
+                    mulzahrian: mulzahrianData.length ? mulzahrianData.reduce((sum, d) => sum + parseInt(d.bloodPressure.split('/')[0]), 0) / mulzahrianData.length : 0
+                },
+                diastolic: {
+                    molina: molinaData.length ? molinaData.reduce((sum, d) => sum + parseInt(d.bloodPressure.split('/')[1]), 0) / molinaData.length : 0,
+                    mulzahrian: mulzahrianData.length ? mulzahrianData.reduce((sum, d) => sum + parseInt(d.bloodPressure.split('/')[1]), 0) / mulzahrianData.length : 0
+                },
+                weight: {
+                    molina: molinaData.length ? molinaData.reduce((sum, d) => sum + d.weight, 0) / molinaData.length : 0,
+                    mulzahrian: mulzahrianData.length ? mulzahrianData.reduce((sum, d) => sum + d.weight, 0) / mulzahrianData.length : 0
+                },
+                height: {
+                    molina: molinaData.length ? molinaData.reduce((sum, d) => sum + d.height, 0) / molinaData.length : 0,
+                    mulzahrian: mulzahrianData.length ? mulzahrianData.reduce((sum, d) => sum + d.height, 0) / mulzahrianData.length : 0
+                },
+                bmi: {
+                    molina: molinaData.length ? molinaData.reduce((sum, d) => sum + calculateBMI(d.weight, d.height), 0) / molinaData.length : 0,
+                    mulzahrian: mulzahrianData.length ? mulzahrianData.reduce((sum, d) => sum + calculateBMI(d.weight, d.height), 0) / mulzahrianData.length : 0
+                }
+            };
+
+            // Extract original values for annotations
+            const originalValues = {
+                cholesterol: {
+                    molina: months.map(m => {
+                        const record = molinaData.find(d => d.month === m);
+                        return record ? record.cholesterol : 0;
+                    }),
+                    mulzahrian: months.map(m => {
+                        const record = mulzahrianData.find(d => d.month === m);
+                        return record ? record.cholesterol : 0;
+                    })
+                },
+                bloodSugar: {
+                    molina: months.map(m => {
+                        const record = molinaData.find(d => d.month === m);
+                        return record ? record.bloodSugar : 0;
+                    }),
+                    mulzahrian: months.map(m => {
+                        const record = mulzahrianData.find(d => d.month === m);
+                        return record ? record.bloodSugar : 0;
+                    })
+                }
+            };
+
+            return {
+                months,
+                cholesterol: {
+                    molina: months.map(m => {
+                        const record = molinaData.find(d => d.month === m);
+                        return record ? getStackedSegments('cholesterol', record.cholesterol, 'Molina Azlova') : { normal: 0, caution: 0, unhealthy: 0 };
+                    }),
+                    mulzahrian: months.map(m => {
+                        const record = mulzahrianData.find(d => d.month === m);
+                        return record ? getStackedSegments('cholesterol', record.cholesterol, 'Mulzahrian') : { normal: 0, caution: 0, unhealthy: 0 };
+                    })
+                },
+                bloodSugar: {
+                    molina: months.map(m => {
+                        const record = molinaData.find(d => d.month === m);
+                        return record ? getStackedSegments('bloodSugar', record.bloodSugar, 'Molina Azlova') : { normal: 0, caution: 0, unhealthy: 0 };
+                    }),
+                    mulzahrian: months.map(m => {
+                        const record = mulzahrianData.find(d => d.month === m);
+                        return record ? getStackedSegments('bloodSugar', record.bloodSugar, 'Mulzahrian') : { normal: 0, caution: 0, unhealthy: 0 };
+                    })
+                },
+                uricAcid: {
+                    molina: months.map(m => {
+                        const record = molinaData.find(d => d.month === m);
+                        return record ? getStackedSegments('uricAcid', record.uricAcid, 'Molina Azlova') : { normal: 0, caution: 0, unhealthy: 0 };
+                    }),
+                    mulzahrian: months.map(m => {
+                        const record = mulzahrianData.find(d => d.month === m);
+                        return record ? getStackedSegments('uricAcid', record.uricAcid, 'Mulzahrian') : { normal: 0, caution: 0, unhealthy: 0 };
+                    })
+                },
+                bloodPressure: {
+                    molina: months.map(m => {
+                        const record = molinaData.find(d => d.month === m);
+                        if (record) {
+                            const [systolic, diastolic] = record.bloodPressure.split('/').map(Number);
+                            return {
+                                systolic: getStackedSegments('systolic', systolic, 'Molina Azlova'),
+                                diastolic: getStackedSegments('diastolic', diastolic, 'Molina Azlova')
+                            };
+                        }
+                        return { systolic: { normal: 0, caution: 0, unhealthy: 0 }, diastolic: { normal: 0, caution: 0, unhealthy: 0 } };
+                    }),
+                    mulzahrian: months.map(m => {
+                        const record = mulzahrianData.find(d => d.month === m);
+                        if (record) {
+                            const [systolic, diastolic] = record.bloodPressure.split('/').map(Number);
+                            return {
+                                systolic: getStackedSegments('systolic', systolic, 'Mulzahrian'),
+                                diastolic: getStackedSegments('diastolic', diastolic, 'Mulzahrian')
+                            };
+                        }
+                        return { systolic: { normal: 0, caution: 0, unhealthy: 0 }, diastolic: { normal: 0, caution: 0, unhealthy: 0 } };
+                    })
+                },
+                bmi: {
+                    molina: months.map(m => {
+                        const record = molinaData.find(d => d.month === m);
+                        return record ? getStackedSegments('bmi', calculateBMI(record.weight, record.height), 'Molina Azlova') : { normal: 0, caution: 0, unhealthy: 0 };
+                    }),
+                    mulzahrian: months.map(m => {
+                        const record = mulzahrianData.find(d => d.month === m);
+                        return record ? getStackedSegments('bmi', calculateBMI(record.weight, record.height), 'Mulzahrian') : { normal: 0, caution: 0, unhealthy: 0 };
+                    })
+                },
+                weight: {
+                    molina: months.map(m => {
+                        const record = molinaData.find(d => d.month === m);
+                        return record ? getStackedSegments('weight', record.weight, 'Molina Azlova') : { normal: 0, caution: 0, unhealthy: 0 };
+                    }),
+                    mulzahrian: months.map(m => {
+                        const record = mulzahrianData.find(d => d.month === m);
+                        return record ? getStackedSegments('weight', record.weight, 'Mulzahrian') : { normal: 0, caution: 0, unhealthy: 0 };
+                    })
+                },
+                height: {
+                    molina: months.map(m => {
+                        const record = molinaData.find(d => d.month === m);
+                        return record ? record.height : 0;
+                    }),
+                    mulzahrian: months.map(m => {
+                        const record = mulzahrianData.find(d => d.month === m);
+                        return record ? record.height : 0;
+                    })
+                },
+                averages,
+                originalValues
+            };
+        }
+
+        // Initialize charts
+        function initCharts(month = '', year = '') {
+            const chartData = processChartData(month, year);
+            const months = chartData.months;
+
+            // Destroy existing charts to prevent overlap
+            const canvases = [
+                'cholesterolChart', 'bloodSugarChart', 'uricAcidChart', 'bloodPressureChart', 
+                'bmiChart', 'weightChart', 'heightChart', 'cholesterolTrendChart', 'healthProfileChart',
+                'avgCholesterolChart', 'avgBloodSugarChart', 'avgUricAcidChart', 
+                'avgSystolicChart', 'avgDiastolicChart', 'avgWeightChart', 'avgHeightChart', 'avgBmiChart'
+            ];
+            canvases.forEach(id => {
+                const chart = Chart.getChart(id);
+                if (chart) chart.destroy();
+            });
+
+            // Cholesterol Stacked Bar Chart
+            new Chart(document.getElementById('cholesterolChart'), {
+                type: 'bar',
+                data: {
+                    labels: months,
+                    datasets: [
+                        {
+                            label: 'Molina Azlova Normal',
+                            data: chartData.cholesterol.molina.map(d => d.normal),
+                            backgroundColor: '#10B981',
+                            stack: 'Molina'
+                        },
+                        {
+                            label: 'Molina Azlova Caution',
+                            data: chartData.cholesterol.molina.map(d => d.caution),
+                            backgroundColor: '#F59E0B',
+                            stack: 'Molina'
+                        },
+                        {
+                            label: 'Molina Azlova Unhealthy',
+                            data: chartData.cholesterol.molina.map(d => d.unhealthy),
+                            backgroundColor: '#EF4444',
+                            stack: 'Molina'
+                        },
+                        {
+                            label: 'Mulzahrian Normal',
+                            data: chartData.cholesterol.mulzahrian.map(d => d.normal),
+                            backgroundColor: '#10B981',
+                            stack: 'Mulzahrian'
+                        },
+                        {
+                            label: 'Mulzahrian Caution',
+                            data: chartData.cholesterol.mulzahrian.map(d => d.caution),
+                            backgroundColor: '#F59E0B',
+                            stack: 'Mulzahrian'
+                        },
+                        {
+                            label: 'Mulzahrian Unhealthy',
+                            data: chartData.cholesterol.mulzahrian.map(d => d.unhealthy),
+                            backgroundColor: '#EF4444',
+                            stack: 'Mulzahrian'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: { stacked: true },
+                        y: { stacked: true, title: { display: true, text: 'Cholesterol (mg/dL)' }, beginAtZero: true }
+                    },
+                    plugins: {
+                        annotation: {
+                            annotations: {
+                                molinaOriginal: {
+                                    type: 'label',
+                                    xValue: months.map((m, i) => i + 0.5),
+                                    yValue: -20,
+                                    content: months.map((m, i) => `Chol: ${chartData.originalValues.cholesterol.molina[i].toFixed(2)}`),
+                                    font: { size: 10 },
+                                    color: '#6B7280',
+                                    position: 'start'
+                                },
+                                mulzahrianOriginal: {
+                                    type: 'label',
+                                    xValue: months.map((m, i) => i + 1.5),
+                                    yValue: -20,
+                                    content: months.map((m, i) => `Chol: ${chartData.originalValues.cholesterol.mulzahrian[i].toFixed(2)}`),
+                                    font: { size: 10 },
+                                    color: '#6B7280',
+                                    position: 'start'
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Blood Sugar Stacked Bar Chart
+            new Chart(document.getElementById('bloodSugarChart'), {
+                type: 'bar',
+                data: {
+                    labels: months,
+                    datasets: [
+                        {
+                            label: 'Molina Azlova Normal',
+                            data: chartData.bloodSugar.molina.map(d => d.normal),
+                            backgroundColor: '#10B981',
+                            stack: 'Molina'
+                        },
+                        {
+                            label: 'Molina Azlova Caution',
+                            data: chartData.bloodSugar.molina.map(d => d.caution),
+                            backgroundColor: '#F59E0B',
+                            stack: 'Molina'
+                        },
+                        {
+                            label: 'Molina Azlova Unhealthy',
+                            data: chartData.bloodSugar.molina.map(d => d.unhealthy),
+                            backgroundColor: '#EF4444',
+                            stack: 'Molina'
+                        },
+                        {
+                            label: 'Mulzahrian Normal',
+                            data: chartData.bloodSugar.mulzahrian.map(d => d.normal),
+                            backgroundColor: '#10B981',
+                            stack: 'Mulzahrian'
+                        },
+                        {
+                            label: 'Mulzahrian Caution',
+                            data: chartData.bloodSugar.mulzahrian.map(d => d.caution),
+                            backgroundColor: '#F59E0B',
+                            stack: 'Mulzahrian'
+                        },
+                        {
+                            label: 'Mulzahrian Unhealthy',
+                            data: chartData.bloodSugar.mulzahrian.map(d => d.unhealthy),
+                            backgroundColor: '#EF4444',
+                            stack: 'Mulzahrian'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: { stacked: true },
+                        y: { stacked: true, title: { display: true, text: 'Blood Sugar (mg/dL)' }, beginAtZero: true }
+                    },
+                    plugins: {
+                        annotation: {
+                            annotations: {
+                                molinaOriginal: {
+                                    type: 'label',
+                                    xValue: months.map((m, i) => i + 0.5),
+                                    yValue: -20,
+                                    content: months.map((m, i) => `Sugar: ${chartData.originalValues.bloodSugar.molina[i].toFixed(2)}`),
+                                    font: { size: 10 },
+                                    color: '#6B7280',
+                                    position: 'start'
+                                },
+                                mulzahrianOriginal: {
+                                    type: 'label',
+                                    xValue: months.map((m, i) => i + 1.5),
+                                    yValue: -20,
+                                    content: months.map((m, i) => `Sugar: ${chartData.originalValues.bloodSugar.mulzahrian[i].toFixed(2)}`),
+                                    font: { size: 10 },
+                                    color: '#6B7280',
+                                    position: 'start'
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Uric Acid Stacked Bar Chart
+            new Chart(document.getElementById('uricAcidChart'), {
+                type: 'bar',
+                data: {
+                    labels: months,
+                    datasets: [
+                        {
+                            label: 'Molina Azlova Normal',
+                            data: chartData.uricAcid.molina.map(d => d.normal),
+                            backgroundColor: '#10B981',
+                            stack: 'Molina'
+                        },
+                        {
+                            label: 'Molina Azlova Caution',
+                            data: chartData.uricAcid.molina.map(d => d.caution),
+                            backgroundColor: '#F59E0B',
+                            stack: 'Molina'
+                        },
+                        {
+                            label: 'Molina Azlova Unhealthy',
+                            data: chartData.uricAcid.molina.map(d => d.unhealthy),
+                            backgroundColor: '#EF4444',
+                            stack: 'Molina'
+                        },
+                        {
+                            label: 'Mulzahrian Normal',
+                            data: chartData.uricAcid.mulzahrian.map(d => d.normal),
+                            backgroundColor: '#10B981',
+                            stack: 'Mulzahrian'
+                        },
+                        {
+                            label: 'Mulzahrian Caution',
+                            data: chartData.uricAcid.mulzahrian.map(d => d.caution),
+                            backgroundColor: '#F59E0B',
+                            stack: 'Mulzahrian'
+                        },
+                        {
+                            label: 'Mulzahrian Unhealthy',
+                            data: chartData.uricAcid.mulzahrian.map(d => d.unhealthy),
+                            backgroundColor: '#EF4444',
+                            stack: 'Mulzahrian'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: { stacked: true },
+                        y: { stacked: true, title: { display: true, text: 'Uric Acid (mg/dL)' }, beginAtZero: true }
+                    }
+                }
+            });
+
+            // Blood Pressure Stacked Bar Chart
+            new Chart(document.getElementById('bloodPressureChart'), {
+                type: 'bar',
+                data: {
+                    labels: months,
+                    datasets: [
+                        {
+                            label: 'Molina Systolic Normal',
+                            data: chartData.bloodPressure.molina.map(d => d.systolic.normal),
+                            backgroundColor: '#10B981',
+                            stack: 'Molina Systolic'
+                        },
+                        {
+                            label: 'Molina Systolic Caution',
+                            data: chartData.bloodPressure.molina.map(d => d.systolic.caution),
+                            backgroundColor: '#F59E0B',
+                            stack: 'Molina Systolic'
+                        },
+                        {
+                            label: 'Molina Systolic Unhealthy',
+                            data: chartData.bloodPressure.molina.map(d => d.systolic.unhealthy),
+                            backgroundColor: '#EF4444',
+                            stack: 'Molina Systolic'
+                        },
+                        {
+                            label: 'Molina Diastolic Normal',
+                            data: chartData.bloodPressure.molina.map(d => d.diastolic.normal),
+                            backgroundColor: '#10B981',
+                            stack: 'Molina Diastolic'
+                        },
+                        {
+                            label: 'Molina Diastolic Caution',
+                            data: chartData.bloodPressure.molina.map(d => d.diastolic.caution),
+                            backgroundColor: '#F59E0B',
+                            stack: 'Molina Diastolic'
+                        },
+                        {
+                            label: 'Molina Diastolic Unhealthy',
+                            data: chartData.bloodPressure.molina.map(d => d.diastolic.unhealthy),
+                            backgroundColor: '#EF4444',
+                            stack: 'Molina Diastolic'
+                        },
+                        {
+                            label: 'Mulzahrian Systolic Normal',
+                            data: chartData.bloodPressure.mulzahrian.map(d => d.systolic.normal),
+                            backgroundColor: '#10B981',
+                            stack: 'Mulzahrian Systolic'
+                        },
+                        {
+                            label: 'Mulzahrian Systolic Caution',
+                            data: chartData.bloodPressure.mulzahrian.map(d => d.systolic.caution),
+                            backgroundColor: '#F59E0B',
+                            stack: 'Mulzahrian Systolic'
+                        },
+                        {
+                            label: 'Mulzahrian Systolic Unhealthy',
+                            data: chartData.bloodPressure.mulzahrian.map(d => d.systolic.unhealthy),
+                            backgroundColor: '#EF4444',
+                            stack: 'Mulzahrian Systolic'
+                        },
+                        {
+                            label: 'Mulzahrian Diastolic Normal',
+                            data: chartData.bloodPressure.mulzahrian.map(d => d.diastolic.normal),
+                            backgroundColor: '#10B981',
+                            stack: 'Mulzahrian Diastolic'
+                        },
+                        {
+                            label: 'Mulzahrian Diastolic Caution',
+                            data: chartData.bloodPressure.mulzahrian.map(d => d.diastolic.caution),
+                            backgroundColor: '#F59E0B',
+                            stack: 'Mulzahrian Diastolic'
+                        },
+                        {
+                            label: 'Mulzahrian Diastolic Unhealthy',
+                            data: chartData.bloodPressure.mulzahrian.map(d => d.diastolic.unhealthy),
+                            backgroundColor: '#EF4444',
+                            stack: 'Mulzahrian Diastolic'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: { stacked: true },
+                        y: { stacked: true, title: { display: true, text: 'Blood Pressure (mmHg)' }, beginAtZero: true }
+                    }
+                }
+            });
+
+            // BMI Stacked Bar Chart
+            new Chart(document.getElementById('bmiChart'), {
+                type: 'bar',
+                data: {
+                    labels: months,
+                    datasets: [
+                        {
+                            label: 'Molina Azlova Normal',
+                            data: chartData.bmi.molina.map(d => d.normal),
+                            backgroundColor: '#10B981',
+                            stack: 'Molina'
+                        },
+                        {
+                            label: 'Molina Azlova Caution',
+                            data: chartData.bmi.molina.map(d => d.caution),
+                            backgroundColor: '#F59E0B',
+                            stack: 'Molina'
+                        },
+                        {
+                            label: 'Molina Azlova Unhealthy',
+                            data: chartData.bmi.molina.map(d => d.unhealthy),
+                            backgroundColor: '#EF4444',
+                            stack: 'Molina'
+                        },
+                        {
+                            label: 'Mulzahrian Normal',
+                            data: chartData.bmi.mulzahrian.map(d => d.normal),
+                            backgroundColor: '#10B981',
+                            stack: 'Mulzahrian'
+                        },
+                        {
+                            label: 'Mulzahrian Caution',
+                            data: chartData.bmi.mulzahrian.map(d => d.caution),
+                            backgroundColor: '#F59E0B',
+                            stack: 'Mulzahrian'
+                        },
+                        {
+                            label: 'Mulzahrian Unhealthy',
+                            data: chartData.bmi.mulzahrian.map(d => d.unhealthy),
+                            backgroundColor: '#EF4444',
+                            stack: 'Mulzahrian'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: { stacked: true },
+                        y: { stacked: true, title: { display: true, text: 'BMI (kg/m²)' }, beginAtZero: true }
+                    }
+                }
+            });
+
+            // Weight Stacked Bar Chart
+            new Chart(document.getElementById('weightChart'), {
+                type: 'bar',
+                data: {
+                    labels: months,
+                    datasets: [
+                        {
+                            label: 'Molina Azlova Normal',
+                            data: chartData.weight.molina.map(d => d.normal),
+                            backgroundColor: '#10B981',
+                            stack: 'Molina'
+                        },
+                        {
+                            label: 'Molina Azlova Caution',
+                            data: chartData.weight.molina.map(d => d.caution),
+                            backgroundColor: '#F59E0B',
+                            stack: 'Molina'
+                        },
+                        {
+                            label: 'Molina Azlova Unhealthy',
+                            data: chartData.weight.molina.map(d => d.unhealthy),
+                            backgroundColor: '#EF4444',
+                            stack: 'Molina'
+                        },
+                        {
+                            label: 'Mulzahrian Normal',
+                            data: chartData.weight.mulzahrian.map(d => d.normal),
+                            backgroundColor: '#10B981',
+                            stack: 'Mulzahrian'
+                        },
+                        {
+                            label: 'Mulzahrian Caution',
+                            data: chartData.weight.mulzahrian.map(d => d.caution),
+                            backgroundColor: '#F59E0B',
+                            stack: 'Mulzahrian'
+                        },
+                        {
+                            label: 'Mulzahrian Unhealthy',
+                            data: chartData.weight.mulzahrian.map(d => d.unhealthy),
+                            backgroundColor: '#EF4444',
+                            stack: 'Mulzahrian'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        x: { stacked: true },
+                        y: { stacked: true, title: { display: true, text: 'Weight (kg)' }, beginAtZero: true }
+                    }
+                }
+            });
+
+            // Height Bar Chart
+            new Chart(document.getElementById('heightChart'), {
+                type: 'bar',
+                data: {
+                    labels: months,
+                    datasets: [
+                        { label: 'Molina Azlova', data: chartData.height.molina, backgroundColor: '#3B82F6' },
+                        { label: 'Mulzahrian', data: chartData.height.mulzahrian, backgroundColor: '#10B981' }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: { y: { title: { display: true, text: 'Height (cm)' } } }
+                }
+            });
+
+            // Cholesterol Trend Line Chart
+            new Chart(document.getElementById('cholesterolTrendChart'), {
+                type: 'line',
+                data: {
+                    labels: months,
+                    datasets: [
+                        {
+                            label: 'Molina Azlova Cholesterol',
+                            data: [220, 236],
+                            borderColor: '#3B82F6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                            fill: true,
+                            tension: 0.1
+                        },
+                        {
+                            label: 'Mulzahrian Cholesterol',
+                            data: [232, 171],
+                            borderColor: '#10B981',
+                            backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                            fill: true,
+                            tension: 0.1
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            title: { display: true, text: 'Cholesterol (mg/dL)' },
+                            beginAtZero: true
+                        }
+                    },
+                    plugins: {
+                        legend: { position: 'top' }
+                    }
+                }
+            });
+
+            // Health Profile Radar Chart (July 2025)
+            const julyData = healthData.filter(d => d.month === 'July' && d.year === 2025);
+            const molinaJuly = julyData.find(d => d.name === 'Molina Azlova');
+            const mulzahrianJuly = julyData.find(d => d.name === 'Mulzahrian');
+            new Chart(document.getElementById('healthProfileChart'), {
+                type: 'radar',
+                data: {
+                    labels: ['Cholesterol', 'Blood Sugar', 'Uric Acid', 'Systolic BP', 'Diastolic BP', 'BMI', 'Weight'],
+                    datasets: [
+                        {
+                            label: 'Molina Azlova',
+                            data: [
+                                molinaJuly ? molinaJuly.cholesterol : 0,
+                                molinaJuly ? molinaJuly.bloodSugar : 0,
+                                molinaJuly ? molinaJuly.uricAcid : 0,
+                                molinaJuly ? parseInt(molinaJuly.bloodPressure.split('/')[0]) : 0,
+                                molinaJuly ? parseInt(molinaJuly.bloodPressure.split('/')[1]) : 0,
+                                molinaJuly ? calculateBMI(molinaJuly.weight, molinaJuly.height) : 0,
+                                molinaJuly ? molinaJuly.weight : 0
+                            ],
+                            backgroundColor: 'rgba(59, 130, 246, 0.2)',
+                            borderColor: '#3B82F6',
+                            borderWidth: 2
+                        },
+                        {
+                            label: 'Mulzahrian',
+                            data: [
+                                mulzahrianJuly ? mulzahrianJuly.cholesterol : 0,
+                                mulzahrianJuly ? mulzahrianJuly.bloodSugar : 0,
+                                mulzahrianJuly ? mulzahrianJuly.uricAcid : 0,
+                                mulzahrianJuly ? parseInt(mulzahrianJuly.bloodPressure.split('/')[0]) : 0,
+                                mulzahrianJuly ? parseInt(mulzahrianJuly.bloodPressure.split('/')[1]) : 0,
+                                mulzahrianJuly ? calculateBMI(mulzahrianJuly.weight, mulzahrianJuly.height) : 0,
+                                mulzahrianJuly ? mulzahrianJuly.weight : 0
+                            ],
+                            backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                            borderColor: '#10B981',
+                            borderWidth: 2
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            suggestedMin: 0,
+                            suggestedMax: 300
+                        }
+                    },
+                    plugins: {
+                        legend: { position: 'top' }
+                    }
+                }
+            });
+
+            // Pie Charts for Averages
+            const pieColors = ['#3B82F6', '#10B981'];
+            const maxValues = {
+                cholesterol: 300,
+                bloodSugar: 150,
+                uricAcid: 10,
+                systolic: 200,
+                diastolic: 120,
+                weight: 100,
+                height: 200,
+                bmi: 40
+            };
+
+            new Chart(document.getElementById('avgCholesterolChart'), {
+                type: 'pie',
+                data: {
+                    labels: ['Molina Azlova', 'Mulzahrian'],
+                    datasets: [{
+                        data: [
+                            chartData.averages.cholesterol.molina,
+                            chartData.averages.cholesterol.mulzahrian
+                        ],
+                        backgroundColor: pieColors
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+
+            new Chart(document.getElementById('avgBloodSugarChart'), {
+                type: 'pie',
+                data: {
+                    labels: ['Molina Azlova', 'Mulzahrian'],
+                    datasets: [{
+                        data: [
+                            chartData.averages.bloodSugar.molina,
+                            chartData.averages.bloodSugar.mulzahrian
+                        ],
+                        backgroundColor: pieColors
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+
+            new Chart(document.getElementById('avgUricAcidChart'), {
+                type: 'pie',
+                data: {
+                    labels: ['Molina Azlova', 'Mulzahrian'],
+                    datasets: [{
+                        data: [
+                            chartData.averages.uricAcid.molina,
+                            chartData.averages.uricAcid.mulzahrian
+                        ],
+                        backgroundColor: pieColors
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+
+            new Chart(document.getElementById('avgSystolicChart'), {
+                type: 'pie',
+                data: {
+                    labels: ['Molina Azlova', 'Mulzahrian'],
+                    datasets: [{
+                        data: [
+                            chartData.averages.systolic.molina,
+                            chartData.averages.systolic.mulzahrian
+                        ],
+                        backgroundColor: pieColors
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+
+            new Chart(document.getElementById('avgDiastolicChart'), {
+                type: 'pie',
+                data: {
+                    labels: ['Molina Azlova', 'Mulzahrian'],
+                    datasets: [{
+                        data: [
+                            chartData.averages.diastolic.molina,
+                            chartData.averages.diastolic.mulzahrian
+                        ],
+                        backgroundColor: pieColors
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+
+            new Chart(document.getElementById('avgWeightChart'), {
+                type: 'pie',
+                data: {
+                    labels: ['Molina Azlova', 'Mulzahrian'],
+                    datasets: [{
+                        data: [
+                            chartData.averages.weight.molina,
+                            chartData.averages.weight.mulzahrian
+                        ],
+                        backgroundColor: pieColors
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+
+            new Chart(document.getElementById('avgHeightChart'), {
+                type: 'pie',
+                data: {
+                    labels: ['Molina Azlova', 'Mulzahrian'],
+                    datasets: [{
+                        data: [
+                            chartData.averages.height.molina,
+                            chartData.averages.height.mulzahrian
+                        ],
+                        backgroundColor: pieColors
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+
+            new Chart(document.getElementById('avgBmiChart'), {
+                type: 'pie',
+                data: {
+                    labels: ['Molina Azlova', 'Mulzahrian'],
+                    datasets: [{
+                        data: [
+                            chartData.averages.bmi.molina,
+                            chartData.averages.bmi.mulzahrian
+                        ],
+                        backgroundColor: pieColors
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: { legend: { position: 'bottom' } }
+                }
+            });
+        }
+
+        // Filter charts by month and year
+        function filterCharts() {
+            const month = document.getElementById('monthFilter').value;
+            const year = document.getElementById('yearFilter').value;
+            initCharts(month, year);
+        }
+
+        document.getElementById('monthFilter').addEventListener('change', filterCharts);
+        document.getElementById('yearFilter').addEventListener('change', filterCharts);
+
+        // Sidebar toggle for mobile
+        document.getElementById('openSidebar').addEventListener('click', () => {
+            document.querySelector('.sidebar').classList.add('open');
+        });
+
+        document.getElementById('closeSidebar').addEventListener('click', () => {
+            document.querySelector('.sidebar').classList.remove('open');
+        });
+
+        // Initialize charts on page load
+        initCharts();
+    </script>
+</body>
+</html>
